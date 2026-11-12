@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CampusPulse | Energy Intelligence</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+
+:root{
+  --bg:#080f18;--bg2:#0c1723;--panel:#111f2d;--panel2:#162738;
+  --line:#26394b;--line2:#344b60;--txt:#f1f6fb;--muted:#93a8bc;
+  --green:#66e6b4;--green2:#28bd8b;--blue:#83b5ff;--orange:#ffc27e;
+  --purple:#c3a4ff;--shadow:0 18px 45px rgba(0,0,0,.22)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 75% -15%,rgba(42,107,104,.18),transparent 38%),var(--bg);color:var(--txt);font:14px Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;letter-spacing:.01em}
+button,input,select{font:inherit}
+button{transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease}
+button:hover{transform:translateY(-1px)}
+.app{display:flex;min-height:100vh}
+.side{width:252px;flex-shrink:0;background:rgba(11,22,33,.94);border-right:1px solid rgba(120,153,180,.13);padding:27px 19px 20px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:12px;align-items:center;margin:0 0 52px;padding:0 4px}
+.logo{width:43px;height:43px;border-radius:14px;background:linear-gradient(145deg,#1e5949,#15372f);color:var(--green);display:grid;place-items:center;font-size:24px;box-shadow:0 8px 25px rgba(38,198,145,.13)}
+.brand b{font-size:17px;letter-spacing:-.4px}.brand small{display:block;color:#7f9bb0;font-size:9px;letter-spacing:1.8px;margin-top:5px}
+.navlabel,.eyebrow,.klabel{font-size:9px;letter-spacing:1.65px;color:#8299ad;font-weight:750}
+.navlabel{margin:0 10px 13px}
+.nav{padding:13px 14px;border-radius:10px;color:#a8bbcc;margin:4px 0;font-size:12px;border:1px solid transparent;cursor:default}
+.nav.active{background:linear-gradient(100deg,rgba(47,133,103,.22),rgba(38,93,88,.12));color:var(--green);border-color:rgba(102,230,180,.14);box-shadow:inset 3px 0 0 var(--green)}
+.sidefoot{margin-top:auto;border-top:1px solid rgba(120,153,180,.15);padding:17px 7px 0;color:#7890a5;font-size:10px;line-height:2}
+.main{width:100%;max-width:1700px;margin:0 auto;padding:38px 42px 30px}
+.top{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:29px}
+.eyebrow{margin-bottom:11px;color:#80a9c5}
+h1{font-size:32px;line-height:1.1;letter-spacing:-1.15px;margin:0;font-weight:750}
+.sub{color:var(--muted);font-size:13px;margin-top:10px}
+.pill{border:1px solid rgba(102,230,180,.28);background:rgba(32,105,81,.12);border-radius:30px;padding:10px 14px;color:var(--green);font-size:10px;font-weight:700;letter-spacing:.7px;white-space:nowrap}
+.upload{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:20px 22px;background:linear-gradient(112deg,rgba(25,67,60,.66),rgba(17,37,54,.9));border:1px solid rgba(102,230,180,.2);border-radius:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.upload b{font-size:14px;letter-spacing:-.15px}.upload p{font-size:11px;color:#a0b9bd;margin:6px 0 0}
+.uploadright{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+input[type=file]{max-width:205px;font-size:10px;color:#b8c8d6}
+input[type=file]::file-selector-button{background:#243a4b;color:#e2edf6;border:1px solid #3c556a;border-radius:7px;padding:8px 10px;margin-right:9px;cursor:pointer}
+.btn{border:0;border-radius:9px;padding:11px 15px;font-size:11px;font-weight:750;cursor:pointer}
+.primary{background:linear-gradient(135deg,#78f0c1,#48d5a1);color:#082319;box-shadow:0 7px 20px rgba(72,213,161,.16)}
+.primary:hover{box-shadow:0 10px 26px rgba(72,213,161,.25)}
+.ghost{background:#1a2b3b;border:1px solid #354c60;color:#dce8f2}
+.ghost:hover{background:#22394d;border-color:#4b667d}
+.notice{font-size:10px;color:#9aafc1;margin:0 0 23px;padding:0 3px;line-height:1.6}
+.notice strong{color:var(--orange)}
+.msg{display:none;padding:12px 15px;border-radius:10px;font-size:11px;margin-bottom:14px;border:1px solid transparent}
+.msg.ok{display:block;background:rgba(27,105,74,.22);color:#b7f5d7;border-color:rgba(102,230,180,.2)}
+.msg.err{display:block;background:rgba(126,46,58,.23);color:#ffc2c8;border-color:rgba(255,125,145,.2)}
+.empty{text-align:center;padding:68px 22px;background:linear-gradient(145deg,rgba(18,34,49,.94),rgba(12,25,37,.94));border:1px dashed #3a5368;border-radius:17px;box-shadow:var(--shadow)}
+.empty .symbol{font-size:38px;color:var(--green);display:inline-grid;place-items:center;width:68px;height:68px;border-radius:20px;background:rgba(102,230,180,.09);margin-bottom:9px}
+.empty h2{font-size:20px;letter-spacing:-.5px;margin:8px 0}
+.empty p{font-size:12px;color:var(--muted);max-width:530px;margin:0 auto 20px;line-height:1.8}
+.hidden{display:none!important}
+.toolbar{display:flex;justify-content:space-between;align-items:end;gap:15px;flex-wrap:wrap;margin:28px 0 15px}
+.dataset{font-size:14px;font-weight:750;margin-top:6px;color:#e5eef6}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters select,.filters input,.control select{background:#101d2a;border:1px solid #30465a;color:var(--txt);padding:10px 11px;border-radius:9px;font-size:10px;outline:none}
+.filters select:focus,.filters input:focus,.form input:focus,.form select:focus{border-color:#62d9ad;box-shadow:0 0 0 3px rgba(98,217,173,.1)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:15px}
+.kpi,.panel{background:linear-gradient(150deg,rgba(20,35,50,.98),rgba(15,29,43,.98));border:1px solid rgba(116,151,180,.17);border-radius:15px;box-shadow:0 9px 28px rgba(0,0,0,.12)}
+.kpi{padding:19px 19px 17px;position:relative;min-height:126px;overflow:hidden}
+.kpi:after{content:"";position:absolute;width:105px;height:105px;right:-46px;bottom:-55px;border-radius:50%;background:rgba(102,230,180,.055)}
+.klabel{font-size:9px;color:#91a8bb}
+.value{font-size:28px;font-weight:780;letter-spacing:-.8px;margin:15px 0 5px}
+.foot{font-size:10px;color:#8ca2b5}
+.ki{position:absolute;right:17px;top:16px;color:var(--green);font-size:18px;opacity:.85}
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-bottom:14px}
+.panel{padding:19px;min-width:0;transition:border-color .2s ease,transform .2s ease}
+.panel:hover{border-color:rgba(120,170,205,.3)}
+.phead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.panel h3{font-size:13px;margin:0;font-weight:720;letter-spacing:-.15px}
+.panel .desc{font-size:10px;color:#8fa5b8;margin-top:6px;line-height:1.5}
+.tag{font-size:8px;letter-spacing:1.1px;border:1px solid #344b60;border-radius:20px;padding:6px 9px;color:#a6bacb;background:rgba(30,49,67,.45)}
+.chart{height:275px;width:100%;margin-top:12px}
+.charttools{display:flex;gap:7px;align-items:center}
+.charttools select{background:#172a3b;border:1px solid #354e63;color:#d2dfeb;border-radius:7px;padding:7px 9px;font-size:9px}
+.sliderbox{margin-top:7px;padding:0 5px}
+.sliderbox input{width:100%;accent-color:var(--green);cursor:pointer}
+.sliderlabels{display:flex;justify-content:space-between;color:#8da3b6;font-size:9px;margin-top:5px}
+.tablewrap{overflow:auto;margin-top:14px}
+table{width:100%;border-collapse:collapse;white-space:nowrap}
+th{text-align:left;color:#8198ac;font-size:9px;letter-spacing:1.1px;padding:12px 11px;border-bottom:1px solid #2b4053}
+td{font-size:10px;color:#d0dce7;padding:12px 11px;border-bottom:1px solid rgba(45,65,84,.55)}
+tbody tr:hover{background:rgba(120,170,205,.055)}
+.lower{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.quality{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:16px}
+.quality div{background:rgba(28,48,66,.68);border:1px solid rgba(112,148,176,.13);padding:13px;border-radius:10px}
+.quality b{display:block;font-size:20px;letter-spacing:-.4px;margin-bottom:4px}
+.quality span{font-size:9px;color:#92a8ba}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:16px}
+.form label{font-size:10px;color:#9eb1c2}
+.form input,.form select{display:block;width:100%;margin-top:6px;background:#0e1b28;border:1px solid #30475b;color:var(--txt);padding:10px 11px;border-radius:8px;font-size:10px;outline:none}
+.form button{grid-column:1/-1;margin-top:3px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.toggleline{display:flex;gap:8px;align-items:center;color:#9aafc0;font-size:10px;margin-top:13px}
+.toggleline input{accent-color:var(--green)}
+footer{text-align:center;color:#71879a;font-size:10px;padding:28px 0 8px}
+@media(max-width:1100px){.side{width:215px}.main{padding:28px 25px}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.side{display:none}.main{padding:22px 14px}.grid,.lower{grid-template-columns:1fr}.top{align-items:flex-start;display:block}.pill{display:inline-block;margin-top:15px}.value{font-size:24px}.chart{height:250px}}
+@media(max-width:460px){.kpis{grid-template-columns:1fr 1fr;gap:8px}.kpi{padding:14px;min-height:110px}.value{font-size:20px}.upload{padding:16px}.uploadright{width:100%}.uploadright input{max-width:100%;width:100%}.form{grid-template-columns:1fr}.main h1{font-size:27px}}
+
+
+/* Motion system: subtle entrance, hover and data-refresh feedback */
+@keyframes cpFadeUp{
+  from{opacity:0;transform:translateY(14px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes cpSoftGlow{
+  0%,100%{box-shadow:0 0 0 rgba(102,230,180,0)}
+  50%{box-shadow:0 0 22px rgba(102,230,180,.12)}
+}
+@keyframes cpPulseDot{
+  0%,100%{opacity:.65;transform:scale(.92)}
+  50%{opacity:1;transform:scale(1.08)}
+}
+.main > .top{animation:cpFadeUp .55s cubic-bezier(.2,.7,.2,1) both}
+.main > .upload{animation:cpFadeUp .6s .08s cubic-bezier(.2,.7,.2,1) both}
+.main > .notice,.main > .msg{animation:cpFadeUp .5s .13s both}
+.kpi{animation:cpFadeUp .55s cubic-bezier(.2,.7,.2,1) both;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+.kpi:nth-child(1){animation-delay:.08s}.kpi:nth-child(2){animation-delay:.15s}
+.kpi:nth-child(3){animation-delay:.22s}.kpi:nth-child(4){animation-delay:.29s}
+.kpi:hover{transform:translateY(-4px);border-color:rgba(102,230,180,.34);box-shadow:0 15px 34px rgba(0,0,0,.22),0 0 0 1px rgba(102,230,180,.05)}
+.panel{animation:cpFadeUp .55s .12s cubic-bezier(.2,.7,.2,1) both}
+.panel:hover{transform:translateY(-2px);box-shadow:0 15px 35px rgba(0,0,0,.19)}
+.logo{animation:cpSoftGlow 4s 1s ease-in-out infinite}
+.nav{transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
+.nav:hover{background:rgba(102,230,180,.08);color:#d5f8e9;transform:translateX(3px)}
+.btn{position:relative;overflow:hidden}
+.btn:after{content:"";position:absolute;top:-60%;left:-45%;width:28%;height:220%;transform:rotate(25deg);background:rgba(255,255,255,.18);transition:left .55s ease}
+.btn:hover:after{left:130%}
+.empty .symbol{animation:cpPulseDot 3s ease-in-out infinite}
+.chart{transition:opacity .25s ease}
+.value{transition:color .2s ease,transform .2s ease}
+.value.updated{color:var(--green);transform:scale(1.035)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+
+/* User-requested clean layout: hide sidebar and lower utility panels */
+.side{display:none!important}
+.main{width:100%;max-width:1700px;margin:0 auto;padding:38px 42px 30px}
+.removed-ui-section{display:none!important}
+@media(max-width:760px){.main{padding:22px 14px}}
+
+</style></head>
+<body><div class="app">
+<aside class="side"><div class="brand"><div class="logo">⚡</div><div><b>CampusPulse</b><small>ENERGY INTELLIGENCE</small></div></div><div class="navlabel">WORKSPACE</div><div class="nav active">▦ &nbsp; Energy overview</div><div class="nav">◈ &nbsp; Data quality</div><div class="nav">＋ &nbsp; Add reading</div><div class="sidefoot">● Browser-based workspace<br>Campus energy analytics<br>Upload · Explore · Export</div></aside>
+<main class="main">
+<header class="top"><div><div class="eyebrow">CAMPUS OPERATIONS / ANALYTICS</div><h1>Energy overview</h1><div class="sub">Explore energy consumption patterns across campus buildings.</div></div><div class="pill">● ENERGY ANALYTICS</div></header>
+<div id="msg" class="msg"></div>
+<section class="upload"><div><b>⇧ &nbsp; Upload campus energy dataset</b><p>CSV file · Building, timestamp and energy reading required</p></div><div class="uploadright"><input id="file" type="file" accept=".csv"><button class="btn primary" onclick="upload()">Upload & analyse</button><button class="btn ghost" onclick="template()">CSV template ↓</button></div></section>
+<div class="notice"><strong>Data rule:</strong> The dashboard analyses one meter type at a time, so unlike units are never added together. <strong>Intended users:</strong> campus facility managers and energy-management teams.</div>
+<section id="empty" class="empty"><div class="symbol">▤</div><h2>Your energy dashboard starts here</h2><p>Upload your campus energy CSV or explore the interface with clearly labelled simulated demo data.</p><button class="btn primary" onclick="demo()">Load demo dashboard</button></section>
+<section id="dash" class="hidden">
+<div class="toolbar"><div><div class="eyebrow">CURRENT DATASET</div><div class="dataset" id="dataset">Campus energy data</div></div><div class="filters"><select id="bf" onchange="render()"><option value="all">All buildings</option></select><select id="cf" onchange="render()"><option value="all">All categories</option></select><select id="mf" onchange="render()"></select><input id="from" type="date" onchange="render()"><input id="to" type="date" onchange="render()"></div></div>
+<div class="kpis">
+<div class="kpi"><div class="klabel">TOTAL ENERGY</div><div class="value" id="total">—</div><div class="foot" id="totalUnit">selected meter units in period</div><div class="ki">↗</div></div>
+<div class="kpi"><div class="klabel">AVERAGE READING</div><div class="value" id="avg">—</div><div class="foot" id="avgUnit">per record</div><div class="ki">◷</div></div>
+<div class="kpi"><div class="klabel">PEAK READING</div><div class="value" id="peak">—</div><div class="foot" id="peakdate">Highest reading</div><div class="ki">⌁</div></div>
+<div class="kpi"><div class="klabel">BUILDINGS TRACKED</div><div class="value" id="count">—</div><div class="foot">Unique buildings</div><div class="ki">▥</div></div>
+</div>
+<div class="grid">
+<article class="panel"><div class="phead"><div><h3>Energy consumption over time</h3><div class="desc">Daily energy usage · Drag slider to zoom date range</div></div><div class="charttools"><select id="trendType" onchange="render()"><option value="scatter">Line</option><option value="bar">Bar</option></select></div></div><div id="trend" class="chart"></div><div class="sliderbox"><input id="range" type="range" min="1" max="100" value="100" oninput="rangeChanged()"><div class="sliderlabels"><span id="rangeStart">Full range</span><span id="rangeEnd">Latest dates</span></div></div></article>
+<article class="panel"><div class="phead"><div><h3>Consumption by building</h3><div class="desc">Compare total energy by location</div></div><span class="tag">RANKING</span></div><div id="buildings" class="chart"></div></article>
+<article class="panel"><div class="phead"><div><h3>Energy share by building</h3><div class="desc">Which buildings contribute most?</div></div><span class="tag">SHARE</span></div><div id="pie" class="chart"></div></article>
+<article class="panel"><div class="phead"><div><h3>Hourly usage profile</h3><div class="desc">Average reading by hour of day</div></div><span class="tag">PATTERN</span></div><div id="hourly" class="chart"></div></article>
+<article class="panel"><div class="phead"><div><h3>Typical vs peak usage by building</h3><div class="desc">Relationship between average and peak readings per building</div></div><span class="tag">SCATTER</span></div><div id="scatter" class="chart"></div></article>
+<article class="panel"><div class="phead"><div><h3>Peak usage threshold</h3><div class="desc">Highlight readings above your selected threshold</div></div><span class="tag">ALERTS</span></div><div class="value" id="thresholdValue">—</div><input id="threshold" type="range" min="1" max="100" value="50" style="width:100%;accent-color:var(--orange)" oninput="thresholdChanged()"><div class="foot" id="thresholdInfo">Adjust slider to flag unusually high readings.</div><div id="thresholdChart" class="chart" style="height:190px"></div></article>
+<article class="panel"><div class="phead"><div><h3>Recent energy readings</h3><div class="desc">Latest records after filters</div></div><button class="btn ghost" onclick="exportCSV()">Export CSV ↓</button></div><div class="tablewrap"><table><thead><tr><th>BUILDING</th><th>TIMESTAMP</th><th>ENERGY</th><th>METER</th><th>SOURCE</th></tr></thead><tbody id="tbody"></tbody></table></div></article>
+</div>
+<div class="lower">
+<article class="panel"><div class="phead"><div><h3>Decision insights</h3><div class="desc">Automatically summarised from the currently filtered records</div></div><span class="tag">ACTIONABLE FINDINGS</span></div><div id="insights" class="desc" style="font-size:12px;line-height:1.9;margin-top:15px;color:#c5d4e1">Upload a dataset to generate findings.</div></article>
+<article class="panel"><div class="phead"><div><h3>Data quality report</h3><div class="desc">Validation checks on uploaded records</div></div><span class="tag">VALIDATION</span></div><div id="quality" class="quality"></div></article>
+<article class="panel"><div class="phead"><div><h3>Add a new reading</h3><div class="desc">Add a record and update the dashboard instantly</div></div><span class="tag">DATA ENTRY</span></div><form class="form" onsubmit="addReading(event)"><label>Building<input id="newB" required placeholder="e.g. Library"></label><label>Date & time<input id="newT" type="datetime-local" required></label><label>Energy (kWh)<input id="newE" type="number" min="0" step="any" required placeholder="e.g. 15.5"></label><label>Meter type<select id="newM"><option>Electricity</option><option>Chilled Water</option><option>Steam</option><option>Hot Water</option><option>Water</option></select></label><button class="btn primary">＋ Add reading</button></form><div class="toggleline"><input type="checkbox" id="onlyHigh" onchange="render()"> <label for="onlyHigh">Show only readings above threshold in the table</label></div><div class="actions"><button class="btn ghost" onclick="resetFilters()">Reset filters</button><button class="btn ghost" onclick="exportCSV(true)">Export all cleaned records</button></div></article>
+</div>
+<footer>CampusPulse · Campus energy analytics · Demo values are simulated, not actual campus telemetry.</footer>
+</section></main></div>
+<script>
+let data=[],quality={},demoMode=false,rangePct=100,threshold=0;
+const $=id=>document.getElementById(id),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:2});
+const aliases={building:["building","building_id","building_name","site","facility"],buildingUse:["building_use","building_category","category","use"],timestamp:["timestamp","datetime","date_time","date","time"],energy:["energy_kwh","kwh","electricity_kwh","meter_reading","reading","consumption"],meter:["meter_type","meter","meter_name","utility"]};
+function message(s,ok=true){$("msg").textContent=s;$("msg").className="msg "+(ok?"ok":"err");}
+function norm(s){return String(s??"").replace(/^\uFEFF/,"").trim().toLowerCase().replace(/[\s-]+/g,"_")}
+function field(row,names){let ks=Object.keys(row);for(let a of names){let k=ks.find(x=>norm(x)===a);if(k!==undefined)return row[k]}return undefined}
+function process(rows){let q={received:rows.length,missing:0,badDate:0,badEnergy:0,negative:0,duplicates:0},seen=new Set(),out=[];
+rows.forEach(r=>{let b=field(r,aliases.building),use=field(r,aliases.buildingUse)||"Unspecified",t=new Date(field(r,aliases.timestamp)),raw=field(r,aliases.energy),e=Number(raw),m=field(r,aliases.meter)||"Electricity";
+if(b===undefined||String(b).trim()===""){q.missing++;return}if(!Number.isFinite(t.getTime())){q.badDate++;return}if(raw===undefined||String(raw).trim()===""||!Number.isFinite(e)){q.badEnergy++;return}if(e<0){q.negative++;return}
+let stamp=t.toISOString(),building=String(b).trim(),meter=String(m).trim(),sig=[building,stamp,e,meter].join("|");if(seen.has(sig)){q.duplicates++;return}seen.add(sig);out.push({building,buildingUse:String(use).trim(),timestamp:stamp,energy:e,meter,source:"uploaded"})});
+q.kept=out.length;q.removed=q.received-q.kept;quality=q;return out}
+function upload(){let f=$("file").files[0];if(!f){message("Choose a CSV file first.",false);return}Papa.parse(f,{header:true,skipEmptyLines:true,complete:r=>{let rows=r.data;if(!rows.length){message("CSV is empty.",false);return}let h=(r.meta.fields||[]).map(norm);if(!aliases.building.some(x=>h.includes(x))||!aliases.timestamp.some(x=>h.includes(x))||!aliases.energy.some(x=>h.includes(x))){message("Required columns not found. Need building, timestamp and energy_kwh (meter_type optional).",false);return}data=process(rows);if(!data.length){message("No valid rows found. Check your CSV.",false);return}demoMode=false;start(f.name);message("Uploaded "+data.length+" valid readings.")},error:e=>message(e.message,false)})}
+function start(name){$("empty").classList.add("hidden");$("dash").classList.remove("hidden");$("dataset").textContent=name;filters();qualityView();render()}
+function filters(){let bs=[...new Set(data.map(x=>x.building))].sort(),cs=[...new Set(data.map(x=>x.buildingUse||"Unspecified"))].sort(),ms=[...new Set(data.map(x=>x.meter))].sort();$("bf").innerHTML='<option value="all">All buildings</option>'+bs.map(x=>`<option>${esc(x)}</option>`).join("");$("cf").innerHTML='<option value="all">All categories</option>'+cs.map(x=>`<option>${esc(x)}</option>`).join("");$("mf").innerHTML=ms.map(x=>`<option>${esc(x)}</option>`).join("");if(ms.includes("Electricity"))$("mf").value="Electricity";let ds=data.map(x=>x.timestamp.slice(0,10)).sort();$("from").value=ds[0]||"";$("to").value=ds.at(-1)||"";$("range").value=100;rangePct=100}
+function filtered(){let b=$("bf").value,c=$("cf").value,m=$("mf").value,f=$("from").value,t=$("to").value;return data.filter(r=>r.building===b||b==="all").filter(r=>(r.buildingUse||"Unspecified")===c||c==="all").filter(r=>r.meter===m).filter(r=>r.timestamp.slice(0,10)>=f&&r.timestamp.slice(0,10)<=t)}
+const layout={paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",font:{color:"#aab9c9",family:"Inter, Arial"},margin:{l:48,r:15,t:12,b:42},xaxis:{gridcolor:"rgba(75,103,128,.22)",zerolinecolor:"rgba(75,103,128,.25)"},yaxis:{gridcolor:"rgba(75,103,128,.22)",zerolinecolor:"rgba(75,103,128,.25)"},hoverlabel:{bgcolor:"#203548",bordercolor:"#45627a",font:{color:"#f1f6fb"}}};
+function plot(id,traces,extra={}){Plotly.react(id,traces,{...layout,...extra,transition:{duration:420,easing:"cubic-in-out"}},{responsive:true,displayModeBar:false})}
+function setKpi(id,value){let el=$(id);if(!el)return;el.textContent=value;el.classList.remove("updated");void el.offsetWidth;el.classList.add("updated");setTimeout(()=>el.classList.remove("updated"),520)}
+function meterUnit(m){let x=String(m||"").toLowerCase();if(x==="electricity")return "kWh";if(x.includes("water")&&x==="water")return "water-meter units";if(x.includes("chilled"))return "chilled-water meter units";if(x.includes("steam"))return "steam-meter units";if(x.includes("hot"))return "hot-water meter units";return "meter units"}
+function render(){let rows=filtered(),unit=meterUnit($("mf").value);$("totalUnit").textContent=unit+" in selected period";$("avgUnit").textContent=unit+" per record";if(!rows.length){["total","avg","peak","count"].forEach(id=>$(id).textContent="0");$("peakdate").textContent="No records in this selection";$("insights").textContent="No records match the selected filters. Widen the date range or choose another building/category.";["trend","buildings","pie","hourly","scatter","thresholdChart"].forEach(id=>{if($(id))Plotly.purge(id)});$("tbody").innerHTML='<tr><td colspan="5">No matching readings.</td></tr>';return}
+let total=rows.reduce((s,r)=>s+r.energy,0),avg=total/rows.length,peak=rows.reduce((a,b)=>a.energy>b.energy?a:b);setKpi("total",fmt(total));setKpi("avg",fmt(avg));setKpi("peak",fmt(peak.energy));$("peakdate").textContent=new Date(peak.timestamp).toLocaleString();setKpi("count",new Set(rows.map(r=>r.building)).size);
+let daily={};rows.forEach(r=>{let d=r.timestamp.slice(0,10);daily[d]=(daily[d]||0)+r.energy});let days=Object.keys(daily).sort();let cut=Math.max(1,Math.ceil(days.length*rangePct/100)),shown=days.slice(-cut);$("rangeStart").textContent=shown[0]||"—";$("rangeEnd").textContent=shown.at(-1)||"—";
+let trendType=$("trendType").value;plot("trend",[{x:shown,y:shown.map(d=>daily[d]),type:trendType,mode:trendType==="scatter"?"lines+markers":undefined,line:{color:"#69e5b2",width:2},marker:{color:"#69e5b2"},fill:trendType==="scatter"?"tozeroy":undefined,fillcolor:"rgba(105,229,178,.08)"}],{yaxis:{...layout.yaxis,title:unit}});
+let bb={};rows.forEach(r=>bb[r.building]=(bb[r.building]||0)+r.energy);let top=Object.entries(bb).sort((a,b)=>b[1]-a[1]).slice(0,12);plot("buildings",[{x:top.map(x=>x[1]),y:top.map(x=>x[0]),type:"bar",orientation:"h",marker:{color:"#78aaff"}}],{margin:{l:105,r:12,t:10,b:35},xaxis:{...layout.xaxis,title:unit},yaxis:{...layout.yaxis,autorange:"reversed"}});
+plot("pie",[{labels:Object.keys(bb),values:Object.values(bb),type:"pie",hole:.48,textinfo:"percent",hovertemplate:"%{label}<br>%{value:.2f} "+unit+"<extra></extra>",marker:{line:{color:"#121e2b",width:2}}}],{showlegend:true,legend:{orientation:"h",font:{size:9}},margin:{l:5,r:5,t:5,b:5}});
+let hb=Array.from({length:24},()=>[]);rows.forEach(r=>hb[new Date(r.timestamp).getHours()].push(r.energy));let hv=hb.map(a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:0);plot("hourly",[{x:hv.map((_,i)=>String(i).padStart(2,"0")+":00"),y:hv,type:"bar",marker:{color:"#ffbd79"}}],{xaxis:{...layout.xaxis,type:"category",title:"Hour of day",tickangle:-35},yaxis:{...layout.yaxis,title:"Average "+unit}});
+/* Scatter compares two measured numeric variables aggregated per building: average reading and peak reading. */
+let perBuilding={};rows.forEach(r=>{let z=perBuilding[r.building]||(perBuilding[r.building]={sum:0,n:0,peak:0});z.sum+=r.energy;z.n++;z.peak=Math.max(z.peak,r.energy)});let scatterPoints=Object.entries(perBuilding);plot("scatter",[{x:scatterPoints.map(([n,v])=>v.sum/v.n),y:scatterPoints.map(([n,v])=>v.peak),text:scatterPoints.map(([n])=>n),type:"scatter",mode:"markers+text",textposition:"top center",textfont:{size:9,color:"#c9b5ff"},marker:{color:"#b99aff",size:11,opacity:.8},hovertemplate:"%{text}<br>Average: %{x:.2f} "+unit+"<br>Peak: %{y:.2f} "+unit+"<extra></extra>"}],{xaxis:{...layout.xaxis,title:"Average reading per record ("+unit+")"},yaxis:{...layout.yaxis,title:"Peak reading ("+unit+")"}});
+threshold=Number($("threshold").value)/100*Math.max(...rows.map(r=>r.energy));$("thresholdValue").textContent=fmt(threshold)+" "+unit;let high=rows.filter(r=>r.energy>=threshold);$("thresholdInfo").textContent=high.length+" of "+rows.length+" readings are at or above this threshold.";let grouped={};high.forEach(r=>grouped[r.building]=(grouped[r.building]||0)+1);let ge=Object.entries(grouped).sort((a,b)=>b[1]-a[1]).slice(0,7);plot("thresholdChart",[{x:ge.map(x=>x[1]),y:ge.map(x=>x[0]),type:"bar",orientation:"h",marker:{color:"#ffbd79"}}],{margin:{l:100,r:10,t:5,b:25},xaxis:{...layout.xaxis,title:"High readings"},yaxis:{...layout.yaxis,autorange:"reversed"}});
+let tableRows=[...rows].sort((a,b)=>b.timestamp.localeCompare(a.timestamp));if($("onlyHigh").checked)tableRows=tableRows.filter(r=>r.energy>=threshold);$("tbody").innerHTML=tableRows.slice(0,15).map(r=>`<tr><td>${esc(r.building)}</td><td>${new Date(r.timestamp).toLocaleString()}</td><td>${fmt(r.energy)} ${unit}</td><td>${esc(r.meter)}</td><td>${esc(r.source)}</td></tr>`).join("")||'<tr><td colspan="5">No matching readings.</td></tr>';
+let leader=Object.entries(bb).sort((a,b)=>b[1]-a[1])[0],peakHour=hv.indexOf(Math.max(...hv)),categoryTotals={};rows.forEach(r=>{let c=r.buildingUse||"Unspecified";categoryTotals[c]=(categoryTotals[c]||0)+r.energy});let topCategory=Object.entries(categoryTotals).sort((a,b)=>b[1]-a[1])[0],highShare=(high.length/rows.length*100).toFixed(1);$("insights").innerHTML=`<p><strong>${esc(leader[0])}</strong> has the highest total usage in this filtered view (${fmt(leader[1])} ${unit}). Review its operating schedule and major loads.</p><p>Average usage is highest around <strong>${String(peakHour).padStart(2,"0")}:00</strong>. Compare this period with class timetables and building operating hours before changing schedules.</p><p>The largest-use category is <strong>${esc(topCategory[0])}</strong> (${fmt(topCategory[1])} ${unit}).</p><p><strong>${highShare}%</strong> of readings meet the adjustable high-usage threshold. Investigate unusual readings rather than assuming they indicate waste.</p><p style="color:#8fa5b8;font-size:10px">These are descriptive patterns in the uploaded dataset, not proof of cause or actual campus-wide performance.</p>`;
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function qualityView(){let items=[["Rows received",quality.received],["Valid rows kept",quality.kept],["Rows removed",quality.removed],["Missing building",quality.missing],["Invalid timestamps",quality.badDate],["Invalid energy",quality.badEnergy],["Negative energy",quality.negative],["Duplicates",quality.duplicates]];$("quality").innerHTML=items.map(x=>`<div><b>${x[1]??0}</b><span>${x[0]}</span></div>`).join("")}
+function rangeChanged(){rangePct=Number($("range").value);render()}
+function thresholdChanged(){render()}
+function addReading(e){e.preventDefault();let b=$("newB").value.trim(),t=new Date($("newT").value),v=Number($("newE").value),m=$("newM").value;if(!b||!Number.isFinite(t.getTime())||!Number.isFinite(v)||v<0){message("Enter valid reading details.",false);return}let stamp=t.toISOString();if(data.some(r=>r.building===b&&r.timestamp===stamp&&r.energy===v&&r.meter===m)){message("This exact reading already exists.",false);return}data.push({building:b,buildingUse:"Manually added",timestamp:stamp,energy:v,meter:m,source:"manually added"});quality.kept++;filters();qualityView();render();e.target.reset();message("New reading added and dashboard updated. Export to keep your changes.")}
+function resetFilters(){$("bf").value="all";$("cf").value="all";if($("mf").options.length)$("mf").selectedIndex=0;let ds=data.map(x=>x.timestamp.slice(0,10)).sort();$("from").value=ds[0];$("to").value=ds.at(-1);$("onlyHigh").checked=false;render()}
+function download(content,name){let a=document.createElement("a"),u=URL.createObjectURL(new Blob([content],{type:"text/csv"}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+function exportCSV(all=false){let rows=all?data:filtered(),head=["building","building_use","timestamp","energy_kwh","meter_type","source"];let q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';download([head.join(","),...rows.map(r=>[r.building,r.buildingUse||"Unspecified",r.timestamp,r.energy,r.meter,r.source].map(q).join(","))].join("\n"),"campus_energy_cleaned.csv")}
+function template(){download("building,timestamp,energy_kwh,meter_type\nLibrary,2026-11-12 09:00:00,12.5,Electricity\nEngineering Block,2026-11-12 09:00:00,18.2,Electricity\n","campus_energy_template.csv")}
+function demo(){let buildings=["Library","Engineering Block","Science Block","Administration","Hostel"],start=new Date("2026-10-01T00:00:00");data=[];for(let d=0;d<28;d++)for(let h=0;h<24;h+=3)buildings.forEach((b,i)=>{let weekday=new Date(start.getTime()+d*86400000).getDay(),base=[14,22,17,10,26][i],day=h>=8&&h<=18?1.55:.65,week=weekday===0||weekday===6?.7:1;data.push({building:b,buildingUse:["Library","Education","Laboratory","Office","Hostel"][i],timestamp:new Date(start.getTime()+d*86400000+h*3600000).toISOString(),energy:Number((base*day*week*(.75+Math.random()*.5)).toFixed(2)),meter:"Electricity",source:"simulated demo"})});quality={received:data.length,kept:data.length,removed:0,missing:0,badDate:0,badEnergy:0,negative:0,duplicates:0};demoMode=true;start("SIMULATED DEMO DATA — NOT REAL CAMPUS DATA");message("Demo loaded. All values are simulated, not actual campus measurements.")}
+
+/* Hide the sidebar, recent readings table, data-quality panel and manual-entry panel */
+document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll("article.panel").forEach(panel=>{
+    const heading=panel.querySelector("h3");
+    if(!heading)return;
+    const title=heading.textContent.trim().toLowerCase();
+    if(title==="recent energy readings" || title==="data quality report" || title==="add a new reading"){
+      panel.classList.add("removed-ui-section");
+    }
+  });
+});
+
+</script></body></html>
